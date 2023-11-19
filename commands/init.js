@@ -83,9 +83,7 @@ module.exports = {
                         roles.push('Villageois');
                     }
 
-                    //TODO méthode random de migu
-
-                    console.log("Game can start");
+                    const playerRoleArray = setupRole(players, roles);
                 }
             });
 
