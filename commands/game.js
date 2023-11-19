@@ -4,13 +4,52 @@ const setupRole = require("../lib/setup_role");
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('init')
-        .setDescription('Initializes a werewolf game'),
+        .setName('game')
+        .setDescription('Starts a werewolf game'),
     async execute(interaction) {
-        let playerCount;
-        let werewolfCount = 0;
+        const playerRoleArray = await init(interaction);
 
+        console.log(playerRoleArray);
+    }
+};
+
+async function init(interaction) {
+    return new Promise(async (resolve) => {
         await replyInitialEmbed(interaction);
+
+        const playerCount = await playerCountCollector(interaction);
+
+        const werewolfCount = await werewolfCountCollector(interaction, playerCount);
+
+        const players = await gameRoleCollector(interaction, playerCount, werewolfCount);
+
+        resolve(players);
+    });
+}
+
+async function replyInitialEmbed(interaction) {
+    const initialEmbed = new EmbedBuilder()
+        .setTitle('Créer votre jeu Loup-Garou')
+        .setDescription('Ici j\'explique au user comment faire');
+
+    const options = Array.from({ length: 6 }, (_, index) => ({
+        label: `${index + 5}`,
+        value: `${index + 5}`,
+    }));
+
+    const playerSelect = new StringSelectMenuBuilder()
+        .setCustomId('Joueurs')
+        .setPlaceholder('Nombre de joueurs')
+        .addOptions(options);
+
+    const initialRow = new ActionRowBuilder().addComponents(playerSelect);
+
+    await interaction.reply({ embeds: [initialEmbed], components: [initialRow], ephemeral: true });
+}
+
+function playerCountCollector(interaction) {
+    return new Promise(async (resolve) => {
+        let playerCount;
 
         const playerCollector = interaction.channel.createMessageComponentCollector({
             filter: i => i.isStringSelectMenu() && i.customId === 'Joueurs' && i.user.id === interaction.user.id
@@ -20,20 +59,21 @@ module.exports = {
             playerCollector.stop();
 
             playerCount = parseInt(i.values[0]);
+
             const werewolfSelectCount = Math.floor(playerCount / 2);
 
-            let embed, row;
-            if (werewolfSelectCount === 0) {
-                ({ responseEmbed: embed, responseRow: row } = roleEmbed(playerCount, werewolfCount));
-            } else if (werewolfSelectCount === 1) {
-                werewolfCount = 1;
-                ({ responseEmbed: embed, responseRow: row } = roleEmbed(playerCount, werewolfCount));
-            } else {
-                ({ responseEmbed: embed, responseRow: row } = werewolfEmbed(playerCount, werewolfSelectCount));
-            }
+            const { responseEmbed, responseRow } = werewolfEmbed(playerCount, werewolfSelectCount);
 
-            await i.reply({ embeds: [embed], components: [row], ephemeral: true });
+            await i.reply({ embeds: [responseEmbed], components: [responseRow], ephemeral: true });
+
+            resolve(playerCount);
         });
+    });
+}
+
+function werewolfCountCollector(interaction, playerCount) {
+    return new Promise(async (resolve) => {
+        let werewolfCount;
 
         const werewolfCollector = interaction.channel.createMessageComponentCollector({
             filter: i => i.isStringSelectMenu() && i.customId === 'Werewolf' && i.user.id === interaction.user.id
@@ -47,8 +87,14 @@ module.exports = {
             const { responseEmbed, responseRow } = roleEmbed(playerCount, werewolfCount);
 
             await i.reply({ embeds: [responseEmbed], components: [responseRow], ephemeral: true });
-        });
 
+            resolve(werewolfCount);
+        });
+    });
+}
+
+function gameRoleCollector(interaction, playerCount, werewolfCount) {
+    return new Promise(async (resolve) => {
         const roleCollector = interaction.channel.createMessageComponentCollector({
             filter: i => i.isStringSelectMenu() && i.customId === 'Roles' && i.user.id === interaction.user.id
         });
@@ -77,18 +123,6 @@ module.exports = {
 
                 if (players.length === playerCount) {
                     reactionCollector.stop();
-
-                    const villagersToAdd = playerCount - werewolfCount - roles.length;
-
-                    for (let i = 0; i < villagersToAdd; i ++) {
-                        roles.push(Roles.VILLAGER);
-                    }
-
-                    for (let i = 0; i < werewolfCount; i ++) {
-                        roles.push(Roles.WEREWOLF);
-                    }
-
-                    const playerRoleArray = setupRole(players, roles);
                 }
             });
 
@@ -99,28 +133,24 @@ module.exports = {
                     console.log(`${user.username} left the game`);
                 }
             });
+
+            reactionCollector.on('end', () => {
+                console.log('Game can start');
+
+                const villagersToAdd = playerCount - werewolfCount - roles.length;
+
+                for (let i = 0; i < villagersToAdd; i ++) {
+                    roles.push(Roles.VILLAGER);
+                }
+
+                for (let i = 0; i < werewolfCount; i ++) {
+                    roles.push(Roles.WEREWOLF);
+                }
+
+                resolve(setupRole(players, roles));
+            });
         });
-    }
-};
-
-async function replyInitialEmbed(interaction) {
-    const initialEmbed = new EmbedBuilder()
-        .setTitle('Créer votre jeu Loup-Garou')
-        .setDescription('Ici j\'explique au user comment faire');
-
-    const options = Array.from({ length: 10 }, (_, index) => ({
-        label: `${index + 1}`,
-        value: `${index + 1}`,
-    }));
-
-    const playerSelect = new StringSelectMenuBuilder()
-        .setCustomId('Joueurs')
-        .setPlaceholder('Nombre de joueurs')
-        .addOptions(options);
-
-    const initialRow = new ActionRowBuilder().addComponents(playerSelect);
-
-    await interaction.reply({ embeds: [initialEmbed], components: [initialRow], ephemeral: true });
+    });
 }
 
 function werewolfEmbed(playerCount, werewolfSelectCount) {
