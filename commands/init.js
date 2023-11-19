@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
 const Roles = require("../lib/Roles");
+const setupRole = require("../lib/setup_role");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -80,7 +81,11 @@ module.exports = {
                     const villagersToAdd = playerCount - werewolfCount - roles.length;
 
                     for (let i = 0; i < villagersToAdd; i ++) {
-                        roles.push('Villageois');
+                        roles.push(Roles.VILLAGER);
+                    }
+
+                    for (let i = 0; i < werewolfCount; i ++) {
+                        roles.push(Roles.WEREWOLF);
                     }
 
                     const playerRoleArray = setupRole(players, roles);
