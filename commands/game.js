@@ -8,14 +8,26 @@ module.exports = {
         .setDescription('Starts a werewolf game'),
     async execute(interaction) {
         const playerRoleArray = await init(interaction);
-
         console.log(playerRoleArray);
+
+        //TODO Creating channels and assigning players
+
+        //TODO Preparation tour
+
+        //TODO Normal tour
     }
 };
 
+/**
+ * Asks for the player count, werewolf count, and roles
+ * collects réactions to get players
+ * once game is full, shuffles the players and roles
+ * @param interaction The discord interaction
+ * @returns {Promise<unknown>} A list of discord User associated with their role
+ */
 async function init(interaction) {
     return new Promise(async (resolve) => {
-        await replyInitialEmbed(interaction);
+        await playercountEmbed(interaction);
 
         const playerCount = await playerCountCollector(interaction);
 
@@ -27,7 +39,12 @@ async function init(interaction) {
     });
 }
 
-async function replyInitialEmbed(interaction) {
+/**
+ * Sends an embed asking for the player count
+ * @param interaction The discord interaction
+ * @returns {Promise<void>}
+ */
+async function playercountEmbed(interaction) {
     const initialEmbed = new EmbedBuilder()
         .setTitle('Créer votre jeu Loup-Garou')
         .setDescription('Ici j\'explique au user comment faire');
@@ -47,6 +64,12 @@ async function replyInitialEmbed(interaction) {
     await interaction.reply({ embeds: [initialEmbed], components: [initialRow], ephemeral: true });
 }
 
+/**
+ * Attaches a collector to the player count embed
+ * on collect stops the collector, gets the player count and sends the werewolf embed
+ * @param interaction The discord interaction
+ * @returns {Promise<number>} A promise that resolves with the player count when the interaction is processed.
+ */
 function playerCountCollector(interaction) {
     return new Promise(async (resolve) => {
         let playerCount;
@@ -60,9 +83,7 @@ function playerCountCollector(interaction) {
 
             playerCount = parseInt(i.values[0]);
 
-            const werewolfSelectCount = Math.floor(playerCount / 2);
-
-            const { responseEmbed, responseRow } = werewolfEmbed(playerCount, werewolfSelectCount);
+            const { responseEmbed, responseRow } = werewolfEmbed(playerCount);
 
             await i.reply({ embeds: [responseEmbed], components: [responseRow], ephemeral: true });
 
@@ -71,6 +92,13 @@ function playerCountCollector(interaction) {
     });
 }
 
+/**
+ * Attaches a collector to the werewolf count embed
+ * on collect stops the collector, gets the werewolf count and sends the role embed
+ * @param interaction The discord interaction
+ * @param playerCount chosen player count
+ * @returns {Promise<number>} A promise that resolves with the werewolf count when the interaction is processed.
+ */
 function werewolfCountCollector(interaction, playerCount) {
     return new Promise(async (resolve) => {
         let werewolfCount;
@@ -93,6 +121,16 @@ function werewolfCountCollector(interaction, playerCount) {
     });
 }
 
+/**
+ * Attaches a collector to the role embed
+ * on collect stops the collector and gets the roles
+ * then it sends a message collecting reactions.
+ * once game is full, shuffles the players and roles
+ * @param interaction The discord interaction
+ * @param playerCount chosen player count
+ * @param werewolfCount chosen werewolf count
+ * @returns {Promise<[{User, Roles}]>} A promise that resolves with the player-role array when the interaction is processed.
+ */
 function gameRoleCollector(interaction, playerCount, werewolfCount) {
     return new Promise(async (resolve) => {
         const roleCollector = interaction.channel.createMessageComponentCollector({
@@ -153,10 +191,17 @@ function gameRoleCollector(interaction, playerCount, werewolfCount) {
     });
 }
 
-function werewolfEmbed(playerCount, werewolfSelectCount) {
+/**
+ * Creates an embed asking for the werewolf count
+ * @param playerCount chosen player count
+ * @returns {{responseRow: ActionRowBuilder<AnyComponentBuilder>, responseEmbed: EmbedBuilder}} the row and embed to be sent
+ */
+function werewolfEmbed(playerCount) {
     const responseEmbed = new EmbedBuilder()
         .setTitle(`Vous avez choisi ${playerCount} joueurs`)
         .setDescription('Combien de loups voulez-vous ?');
+
+    const werewolfSelectCount = Math.floor(playerCount / 2);
 
     const options = Array.from({ length: werewolfSelectCount }, (_, index) => ({
         label: `${index + 1}`,
@@ -173,6 +218,12 @@ function werewolfEmbed(playerCount, werewolfSelectCount) {
     return { responseEmbed, responseRow };
 }
 
+/**
+ * Creates an embed asking for the roles the game master would like to play
+ * @param playerCount chosen player count
+ * @param werewolfCount chosen werewolf count
+ * @returns {{responseRow: ActionRowBuilder<AnyComponentBuilder>, responseEmbed: EmbedBuilder}} the row and embed to be sent
+ */
 function roleEmbed(playerCount, werewolfCount) {
     const responseEmbed = new EmbedBuilder()
         .setTitle(`Vous avez choisi ${playerCount} joueurs`)
