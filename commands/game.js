@@ -1,6 +1,7 @@
 const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
 const Roles = require("../lib/Roles");
 const setupRole = require("../lib/setup_role");
+const { setupChannels, deleteChannels } = require("../lib/setup_channels");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -11,10 +12,15 @@ module.exports = {
         console.log(playerRoleArray);
 
         //TODO Creating channels and assigning players
+        const channels = await setupChannels(interaction, playerRoleArray);
+        console.log(channels);
 
         //TODO Preparation tour
 
         //TODO Normal tour
+
+        //TODO Delete channels
+        await deleteChannels(channels);
     }
 };
 
