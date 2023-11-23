@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle} = require('discord.js');
 const Roles = require("../lib/Roles");
 const setupRole = require("../lib/setup_role");
 const { setupChannels, deleteChannels } = require("../lib/setup_channels");
@@ -8,12 +8,7 @@ module.exports = {
         .setName('game')
         .setDescription('Starts a werewolf game'),
     async execute(interaction) {
-        const playerRoleArray = await init(interaction);
-        console.log(playerRoleArray);
-
-        //TODO Creating channels and assigning players
-        const channels = await setupChannels(interaction, playerRoleArray);
-        console.log(channels);
+        const { players, channels } = await init(interaction);
 
         //TODO Preparation tour
 
@@ -40,8 +35,11 @@ async function init(interaction) {
         const werewolfCount = await werewolfCountCollector(interaction, playerCount);
 
         const players = await gameRoleCollector(interaction, playerCount, werewolfCount);
+        console.log(players)
 
-        resolve(players);
+        const channels = await setupChannels(interaction, players);
+
+        resolve({ players, channels });
     });
 }
 
@@ -56,8 +54,8 @@ async function playercountEmbed(interaction) {
         .setDescription('Ici j\'explique au user comment faire');
 
     const options = Array.from({ length: 6 }, (_, index) => ({
-        label: `${index + 5}`,
-        value: `${index + 5}`,
+        label: `${index + 2}`,
+        value: `${index + 2}`,
     }));
 
     const playerSelect = new StringSelectMenuBuilder()
@@ -152,33 +150,42 @@ function gameRoleCollector(interaction, playerCount, werewolfCount) {
 
             const responseEmbed = new EmbedBuilder()
                 .setTitle(`Nouveau jeu Loup-Garou de ${playerCount} joueurs`)
-                .setDescription('Réagissez au message si vous voulez jouer à ce Loup-Garou');
+                .setDescription('Ici j\'explique');
 
-            const responseMessage = await i.followUp({ embeds: [responseEmbed] });
+            const join = new ButtonBuilder()
+                .setCustomId("join")
+                .setLabel("Rejoindre")
+                .setStyle(ButtonStyle.Success)
 
-            const reactionCollector = responseMessage.createReactionCollector({ dispose: true });
+            const leave = new ButtonBuilder()
+                .setCustomId("leave")
+                .setLabel("Quitter")
+                .setStyle(ButtonStyle.Danger)
+
+            const row = new ActionRowBuilder().addComponents(join, leave);
+
+            const responseMessage = await i.followUp({ embeds: [responseEmbed], components: [row] });
 
             let players= [];
-            reactionCollector.on('collect', (reaction, user) => {
-                if (!players.find(u => u.id === user.id)) {
-                    console.log(`${user.username} joined the game`)
-                    players.push(user);
+            const collector = responseMessage.createMessageComponentCollector();
+
+            collector.on('collect', i => {
+                if (i.customId === "join" && !players.find(u => u === i.user)) {
+                    players.push(i.user);
+                    console.log(`${i.user.username} joined the game`);
+                } else if (i.customId === "leave" && players.find(u => u === i.user)) {
+                    const index = players.findIndex(u => u === i.user);
+                    if (index !== -1) {
+                        players.splice(index, 1);
+                        console.log(`${i.user.username} left the game`);
+                    }
                 }
 
-                if (players.length === playerCount) {
-                    reactionCollector.stop();
-                }
+                if (players.length === playerCount)
+                    collector.stop();
             });
 
-            reactionCollector.on('remove', (reaction, user) => {
-                const index = players.findIndex(u => u.id === user.id);
-                if (index !== -1) {
-                    players.splice(index, 1);
-                    console.log(`${user.username} left the game`);
-                }
-            });
-
-            reactionCollector.on('end', () => {
+            collector.on('end', () => {
                 console.log('Game can start');
 
                 const villagersToAdd = playerCount - werewolfCount - roles.length;
