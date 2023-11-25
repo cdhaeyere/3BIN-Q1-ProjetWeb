@@ -5,6 +5,7 @@ const Roles = require("../lib/Roles");
 const seerTurn = require("../lib/seer_turn");
 const werewolfTurn = require("../lib/werewolf_turn");
 const littleGirlTurn = require("../lib/little_girl_turn");
+const night_end = require("../lib/nigth_end");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -54,6 +55,13 @@ module.exports = {
                     players
                 );
             }
+
+            await night_end(
+                players,
+                deadThisRound,
+                lovers,
+                mainChannel
+            );
         }
 
         //TODO Delete channels
