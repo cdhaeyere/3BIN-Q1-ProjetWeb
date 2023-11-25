@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder} = require('discord.js');
 const init = require("../lib/init");
 const gameStartRound = require("../lib/gameStartRound");
 const Roles = require("../lib/Roles");
@@ -7,6 +7,7 @@ const werewolfTurn = require("../lib/werewolf_turn");
 const littleGirlTurn = require("../lib/little_girl_turn");
 const witchTurn = require("../lib/witchTurn");
 const night_end = require("../lib/nigth_end");
+const {deleteChannels} = require("../lib/setup_channels");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -27,8 +28,9 @@ module.exports = {
             lovers
         );
 
-        //TODO Normal tour
-        while (true) {
+        let loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF).length;
+        let alivePlayers = players.filter(player => player.isDead === false).length;
+        while (loupGarouCount <= alivePlayers / 2) {
             let deadThisRound = [];
 
             if (players.find(p => p.role === Roles.SEER)?.isDead === false) {
@@ -75,10 +77,44 @@ module.exports = {
                 lovers,
                 mainChannel
             );
+
+            loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF).length;
+            alivePlayers = players.filter(player => player.isDead === false).length;
+
+            if (loupGarouCount > alivePlayers / 2) {
+                const embed = new EmbedBuilder()
+                    .setTitle('VICTOIRE DES LOUPS!');
+
+                await mainChannel.send({ embeds: [embed] });
+                break;
+            } else if (loupGarouCount < 1) {
+                const embed = new EmbedBuilder()
+                    .setTitle('VICTOIRE DU VILLAGE!');
+
+                await mainChannel.send({ embeds: [embed] });
+                break;
+            }
         }
 
-        //TODO Delete channels
+        const embed = new EmbedBuilder()
+            .setTitle('Fin du jeu!');
 
-        // await deleteChannels(channels);
+        const btn = new ButtonBuilder()
+            .setCustomId("delete")
+            .setLabel("Supprimer les channels");
+
+        const row = new ActionRowBuilder().addComponents(btn);
+
+        mainChannel.send({ embeds: [embed], components: [row] });
+
+        const collector = await mainChannel.createMessageComponentCollector({time: 60_000});
+
+        collector.on('collect', async i => {
+            collector.stop();
+        });
+
+        collector.on('end', async collected => {
+            await deleteChannels(channels);
+        });
     }
 };
