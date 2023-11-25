@@ -22,16 +22,17 @@ module.exports = {
         );
 
         //TODO Normal tour
-        if (players.find(p => p.role === Roles.SEER).isDead === false) {
-            channels.find(c => c.role === null)?.channel.send('C\'est a la voyante de jouer');
+        while (true) {
+            if (players.find(p => p.role === Roles.SEER).isDead === false) {
+                channels.find(c => c.role === null)?.channel.send('C\'est a la voyante de jouer');
 
-            await seerTurn(
-                interaction,
-                channels.find(c => c.role === Roles.SEER)?.channel,
-                players
-            );
+                await seerTurn(
+                    interaction,
+                    channels.find(c => c.role === Roles.SEER)?.channel,
+                    players
+                );
+            }
         }
-
 
         //TODO Delete channels
 
