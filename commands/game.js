@@ -3,6 +3,7 @@ const init = require("../lib/init");
 const gameStartRound = require("../lib/gameStartRound");
 const Roles = require("../lib/Roles");
 const seerTurn = require("../lib/seer_turn");
+const werewolfTurn = require("../lib/werewolf_turn");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -13,18 +14,22 @@ module.exports = {
 
         const { players, channels } = await init(interaction);
 
+        let mainChannel = channels.find(c => c.role === null)?.channel;
+
         await gameStartRound(
             players,
             channels.find(c => c.role === Roles.THIEF)?.channel,
             channels.find(c => c.role === Roles.CUPID)?.channel,
-            channels.find(c => c.role === null)?.channel,
+            mainChannel,
             lovers
         );
 
         //TODO Normal tour
         while (true) {
+            let deadThisRound = [];
+
             if (players.find(p => p.role === Roles.SEER).isDead === false) {
-                channels.find(c => c.role === null)?.channel.send('C\'est a la voyante de jouer');
+                mainChannel.send('C\'est a la voyante de jouer');
 
                 await seerTurn(
                     interaction,
@@ -32,6 +37,13 @@ module.exports = {
                     players
                 );
             }
+
+            mainChannel.send('C\'est aux loups-garoux de jouer');
+            await werewolfTurn(
+                players,
+                deadThisRound,
+                channels.find(c => c.role === Roles.WEREWOLF)?.channel
+            );
         }
 
         //TODO Delete channels
