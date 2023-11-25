@@ -4,6 +4,7 @@ const gameStartRound = require("../lib/gameStartRound");
 const Roles = require("../lib/Roles");
 const seerTurn = require("../lib/seer_turn");
 const werewolfTurn = require("../lib/werewolf_turn");
+const littleGirlTurn = require("../lib/little_girl_turn");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -28,7 +29,7 @@ module.exports = {
         while (true) {
             let deadThisRound = [];
 
-            if (players.find(p => p.role === Roles.SEER).isDead === false) {
+            if (players.find(p => p.role === Roles.SEER)?.isDead === false) {
                 mainChannel.send('C\'est a la voyante de jouer');
 
                 await seerTurn(
@@ -44,6 +45,15 @@ module.exports = {
                 deadThisRound,
                 channels.find(c => c.role === Roles.WEREWOLF)?.channel
             );
+
+            if (players.find(p => p.role === Roles.LITTLE_GIRL)?.isDead === false) {
+                mainChannel.send('C\'est a la petite fille de jouer');
+
+                await littleGirlTurn(
+                    channels.find(c => c.role === Roles.LITTLE_GIRL)?.channel,
+                    players
+                );
+            }
         }
 
         //TODO Delete channels
