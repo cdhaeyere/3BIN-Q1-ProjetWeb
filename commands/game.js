@@ -101,11 +101,12 @@ module.exports = {
 
         const btn = new ButtonBuilder()
             .setCustomId("delete")
-            .setLabel("Supprimer les channels");
+            .setLabel("Supprimer les channels")
+            .setStyle(ButtonStyle.Secondary);
 
         const row = new ActionRowBuilder().addComponents(btn);
 
-        mainChannel.send({ embeds: [embed], components: [row] });
+        await mainChannel.send({ embeds: [embed], components: [row] });
 
         const collector = await mainChannel.createMessageComponentCollector({time: 60_000});
 
