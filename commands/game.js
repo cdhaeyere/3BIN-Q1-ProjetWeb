@@ -5,7 +5,7 @@ const Roles = require("../lib/Roles");
 const seerTurn = require("../lib/seer_turn");
 const werewolfTurn = require("../lib/werewolf_turn");
 const littleGirlTurn = require("../lib/little_girl_turn");
-const night_end = require("../lib/nigth_end");
+const witchTurn = require("../lib/witchTurn");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -56,12 +56,17 @@ module.exports = {
                 );
             }
 
-            await night_end(
-                players,
-                deadThisRound,
-                lovers,
-                mainChannel
-            );
+            const witch = players.find(p => p.role === Roles.WITCH);
+            if (!witch?.isDead && (witch?.lifePotion || witch?.deathPotion)) {
+                mainChannel.send('C\'est a la sorcière de jouer');
+
+                await witchTurn(
+                    deadThisRound,
+                    channels.find(c => c.role === Roles.WITCH)?.channel,
+                    witch,
+                    players
+                );
+            }
         }
 
         //TODO Delete channels
