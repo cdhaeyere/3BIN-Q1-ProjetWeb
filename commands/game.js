@@ -17,7 +17,7 @@ module.exports = {
         .setDescription('Starts a werewolf game'),
     async execute(interaction) {
         if (inGame === true) {
-            await interaction.reply({ content: 'Un loup-garou est déjà en cours' });
+            await interaction.reply({ content: 'Un Loup-Garou est déjà en cours' });
             return
         }
         inGame = true;
@@ -27,21 +27,43 @@ module.exports = {
 
         let mainChannel = channels.find(c => c.role === null)?.channel;
 
-        channels = await gameStartRound(
-            players,
-            mainChannel,
-            lovers,
-            thiefRoles,
-            channels
-        );
+        const nightFallsEmbed = new EmbedBuilder()
+            .setTitle("🌟 La nuit tombe 🌙")
+            .setDescription("Le village s'endort");
+
+        let prepRound = false;
+        if (players.find(p => p.role === Roles.CUPID) || players.find(p => p.role === Roles.THIEF)) {
+            prepRound = true;
+
+            await mainChannel.send({ embeds: [nightFallsEmbed] });
+
+            const startRound = new EmbedBuilder()
+                .setTitle("Jeu")
+                .setDescription("Début du tour de préparation");
+
+            await mainChannel.send({ embeds: [startRound] });
+
+            channels = await gameStartRound(
+                players,
+                mainChannel,
+                lovers,
+                thiefRoles,
+                channels
+            );
+        }
 
         let loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF && !player.isDead).length;
         let alivePlayers = players.filter(player => !player.isDead && player.role !== Roles.WEREWOLF).length;
         while (loupGarouCount <= alivePlayers / 2) {
             let deadThisRound = [];
 
+            if (!prepRound) {
+                await mainChannel.send({ embeds: [nightFallsEmbed] });
+                prepRound = false;
+            }
+
             if (players.find(p => p.role === Roles.SEER)?.isDead === false) {
-                mainChannel.send('C\'est a la voyante de jouer');
+                mainChannel.send('C\'est a la voyante de jouer 🔮');
 
                 await seerTurn(
                     interaction,
@@ -50,7 +72,7 @@ module.exports = {
                 );
             }
 
-            mainChannel.send('C\'est aux loups-garoux de jouer');
+            mainChannel.send('C\'est aux Loups-Garous de jouer 🐺');
             deadThisRound = await werewolfTurn(
                 players,
                 deadThisRound,
@@ -58,7 +80,7 @@ module.exports = {
             );
 
             if (players.find(p => p.role === Roles.LITTLE_GIRL)?.isDead === false) {
-                mainChannel.send('C\'est a la petite fille de jouer');
+                mainChannel.send('C\'est a la petite fille de jouer 👧');
 
                 await littleGirlTurn(
                     channels.find(c => c.role === Roles.LITTLE_GIRL)?.channel,
@@ -68,7 +90,7 @@ module.exports = {
 
             const witch = players.find(p => p.role === Roles.WITCH);
             if (!witch?.isDead && (witch?.lifePotion || witch?.deathPotion)) {
-                mainChannel.send('C\'est a la sorcière de jouer');
+                mainChannel.send('C\'est a la sorcière de jouer 🧙🌟');
 
                 await witchTurn(
                     deadThisRound,
@@ -96,7 +118,7 @@ module.exports = {
                 break;
             } else if (loupGarouCount > alivePlayers / 2) {
                 const embed = new EmbedBuilder()
-                    .setTitle('VICTOIRE DES LOUPS!');
+                    .setTitle('VICTOIRE DES LOUPS-GAROUS!');
 
                 await mainChannel.send({ embeds: [embed] });
                 break;
@@ -104,7 +126,8 @@ module.exports = {
         }
 
         const embed = new EmbedBuilder()
-            .setTitle('Fin du jeu!');
+            .setTitle('Fin du jeu!')
+            .setDescription('Merci d\'avoir joué');
 
         const btn = new ButtonBuilder()
             .setCustomId("delete")
