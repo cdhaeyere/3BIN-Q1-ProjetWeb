@@ -27,6 +27,10 @@ module.exports = {
 
         let mainChannel = channels.find(c => c.role === null)?.channel;
 
+        const pingAllPlayers = players.map(p => `<@${p.player.id}>`).join(' ');
+
+        mainChannel.send({ content: pingAllPlayers});
+
         const nightFallsEmbed = new EmbedBuilder()
             .setTitle("🌟 La nuit tombe 🌙")
             .setDescription("Le village s'endort");
