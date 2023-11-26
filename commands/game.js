@@ -9,27 +9,34 @@ const witchTurn = require("../lib/witchTurn");
 const night_end = require("../lib/nigth_end");
 const {deleteChannels} = require("../lib/setup_channels");
 
+let inGame = false;
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('game')
         .setDescription('Starts a werewolf game'),
     async execute(interaction) {
+        if (inGame === true) {
+            await interaction.reply({ content: 'Un loup-garou est déjà en cours' });
+            return
+        }
+        inGame = true;
         let lovers = [];
 
-        const { players, channels } = await init(interaction);
+        let { players, channels, thiefRoles } = await init(interaction);
 
         let mainChannel = channels.find(c => c.role === null)?.channel;
 
-        await gameStartRound(
+        channels = await gameStartRound(
             players,
-            channels.find(c => c.role === Roles.THIEF)?.channel,
-            channels.find(c => c.role === Roles.CUPID)?.channel,
             mainChannel,
-            lovers
+            lovers,
+            thiefRoles,
+            channels
         );
 
-        let loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF).length;
-        let alivePlayers = players.filter(player => player.isDead === false).length;
+        let loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF && !player.isDead).length;
+        let alivePlayers = players.filter(player => !player.isDead && player.role !== Roles.WEREWOLF).length;
         while (loupGarouCount <= alivePlayers / 2) {
             let deadThisRound = [];
 
@@ -44,7 +51,7 @@ module.exports = {
             }
 
             mainChannel.send('C\'est aux loups-garoux de jouer');
-            await werewolfTurn(
+            deadThisRound = await werewolfTurn(
                 players,
                 deadThisRound,
                 channels.find(c => c.role === Roles.WEREWOLF)?.channel
@@ -78,18 +85,18 @@ module.exports = {
                 mainChannel
             );
 
-            loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF).length;
-            alivePlayers = players.filter(player => player.isDead === false).length;
+            loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF && !player.isDead).length;
+            alivePlayers = players.filter(player => !player.isDead && player.role !== Roles.WEREWOLF).length;
 
-            if (loupGarouCount > alivePlayers / 2) {
+            if (loupGarouCount < 1) {
                 const embed = new EmbedBuilder()
-                    .setTitle('VICTOIRE DES LOUPS!');
+                    .setTitle('VICTOIRE DU VILLAGE!');
 
                 await mainChannel.send({ embeds: [embed] });
                 break;
-            } else if (loupGarouCount < 1) {
+            } else if (loupGarouCount > alivePlayers / 2) {
                 const embed = new EmbedBuilder()
-                    .setTitle('VICTOIRE DU VILLAGE!');
+                    .setTitle('VICTOIRE DES LOUPS!');
 
                 await mainChannel.send({ embeds: [embed] });
                 break;
@@ -116,6 +123,7 @@ module.exports = {
 
         collector.on('end', async collected => {
             await deleteChannels(channels);
+            inGame = false;
         });
     }
 };
