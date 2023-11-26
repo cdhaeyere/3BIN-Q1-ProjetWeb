@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder} = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType} = require('discord.js');
 const init = require("../lib/init");
 const gameStartRound = require("../lib/gameStartRound");
 const Roles = require("../lib/Roles");
@@ -8,6 +8,7 @@ const littleGirlTurn = require("../lib/little_girl_turn");
 const witchTurn = require("../lib/witchTurn");
 const night_end = require("../lib/nigth_end");
 const {deleteChannels} = require("../lib/setup_channels");
+const { playSound, joinChannel, Sounds, leaveChannel } = require('../lib/sound');
 
 let inGame = false;
 
@@ -24,6 +25,7 @@ module.exports = {
         let lovers = [];
 
         let { players, channels, thiefRoles } = await init(interaction);
+        const connection = await joinChannel(channels.find(c => c.role === null && c.channel.type === ChannelType.GuildVoice)?.channel);
 
         let mainChannel = channels.find(c => c.role === null)?.channel;
 
@@ -38,7 +40,8 @@ module.exports = {
         let prepRound = false;
         if (players.find(p => p.role === Roles.CUPID) || players.find(p => p.role === Roles.THIEF)) {
             prepRound = true;
-
+            
+            await playSound(connection, Sounds.NIGHT);
             await mainChannel.send({ embeds: [nightFallsEmbed] });
 
             const startRound = new EmbedBuilder()
@@ -52,7 +55,8 @@ module.exports = {
                 mainChannel,
                 lovers,
                 thiefRoles,
-                channels
+                channels,
+                connection
             );
         }
 
@@ -62,12 +66,14 @@ module.exports = {
             let deadThisRound = [];
 
             if (!prepRound) {
+                await playSound(connection, Sounds.NIGHT);
                 await mainChannel.send({ embeds: [nightFallsEmbed] });
                 prepRound = false;
             }
 
             if (players.find(p => p.role === Roles.SEER)?.isDead === false) {
-                mainChannel.send('C\'est a la voyante de jouer 🔮');
+                await playSound(connection, Sounds.SEER);
+                await mainChannel.send('C\'est a la voyante de jouer 🔮');
 
                 await seerTurn(
                     interaction,
@@ -76,7 +82,8 @@ module.exports = {
                 );
             }
 
-            mainChannel.send('C\'est aux Loups-Garous de jouer 🐺');
+            await playSound(connection, Sounds.WOLVES);
+            await mainChannel.send('C\'est aux Loups-Garous de jouer 🐺');
             deadThisRound = await werewolfTurn(
                 players,
                 deadThisRound,
@@ -84,7 +91,8 @@ module.exports = {
             );
 
             if (players.find(p => p.role === Roles.LITTLE_GIRL)?.isDead === false) {
-                mainChannel.send('C\'est a la petite fille de jouer 👧');
+                await playSound(connection, Sounds.GIRL)
+                await mainChannel.send('C\'est a la petite fille de jouer 👧');
 
                 await littleGirlTurn(
                     channels.find(c => c.role === Roles.LITTLE_GIRL)?.channel,
@@ -94,7 +102,8 @@ module.exports = {
 
             const witch = players.find(p => p.role === Roles.WITCH);
             if (!witch?.isDead && (witch?.lifePotion || witch?.deathPotion)) {
-                mainChannel.send('C\'est a la sorcière de jouer 🧙🌟');
+                await playSound(connection, Sounds.WITCH);
+                await mainChannel.send('C\'est a la sorcière de jouer 🧙🌟');
 
                 await witchTurn(
                     deadThisRound,
@@ -108,7 +117,8 @@ module.exports = {
                 players,
                 deadThisRound,
                 lovers,
-                mainChannel
+                mainChannel,
+                connection
             );
 
             loupGarouCount = players.filter(player => player.role === Roles.WEREWOLF && !player.isDead).length;
@@ -149,6 +159,7 @@ module.exports = {
         });
 
         collector.on('end', async collected => {
+            await leaveChannel(connection);
             await deleteChannels(channels);
             inGame = false;
         });
