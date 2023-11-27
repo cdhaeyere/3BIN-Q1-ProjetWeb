@@ -20,6 +20,8 @@
 
 ![image](https://cdn.discordapp.com/attachments/1061254672532394034/1178331863849377913/create-app.ed82aede.png?ex=6575c210&is=65634d10&hm=52a3c8553dc652cc95b20443bde4ee10fbd1c64d24795d68e1d47433386f8102&)
 
+N'oubliez pas de cocher "Presence Intent" et "Server Members Intent" dans l'onglet "Message Content Intent"
+
 4. Dans l'onglet "OAuth2", "URL Generator" cocher les scopes suivants :
 
 - bot
@@ -55,6 +57,32 @@ CLIENT_ID=client_id
 12. Mettez à jour les commandes : `node deploy-commands.js`
 
 13. Lancer le bot : `node index.js`
+
+14. Le bot est maintenant en ligne !
+
+15. Placer le role du bot au dessus des autres roles afin qu'il puisse les gérer
+
+## Utilisation
+
+### Commandes
+
+- `/game` : Lance une partie de Loup Garou
+- `/ping` : Renvoie "Pong !"
+
+### Fonctionnalités
+
+- Création d'une partie
+- Ajout de joueurs
+- Lancement de la partie
+- Attribution des rôles
+- Déroulement de la partie
+- Fin de la partie
+
+## Technologies utilisées
+
+- NodeJS
+- DiscordJS
+- DiscordJS/Voice
 
 ## Développeurs
 
