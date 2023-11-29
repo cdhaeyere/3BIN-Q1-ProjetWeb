@@ -34,7 +34,7 @@ module.exports = {
                     .setColor(Colors.Red)
                     .setDescription('Vous n\'avez pas répondu a temps');
 
-                await interaction.channel.send({ embeds: [errorEmbed], ephemeral: true });
+                await interaction.followUp({ embeds: [errorEmbed], ephemeral: true });
             } else if (e === "master_left") {
                 const gamemasterLeftEmbed = new EmbedBuilder()
                     .setTitle("Annulé")
