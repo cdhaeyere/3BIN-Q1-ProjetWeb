@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType} = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder, ChannelType, Colors} = require('discord.js');
 const init = require("../lib/init");
 const gameStartRound = require("../lib/gameStartRound");
 const Roles = require("../lib/Roles");
@@ -24,7 +24,22 @@ module.exports = {
         inGame = true;
         let lovers = [];
 
-        let { players, channels, thiefRoles } = await init(interaction);
+        let players, channels, thiefRoles;
+        try {
+            ({ players, channels, thiefRoles } = await init(interaction));
+        } catch (e) {
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('Erreur')
+                .setColor(Colors.Red)
+                .setDescription('Vous n\'avez pas répondu a temps');
+
+            await interaction.channel.send({ embeds: [errorEmbed], ephemeral: true });
+
+            inGame = false;
+
+            return;
+        }
+
         const connection = await joinChannel(channels.find(c => c.role === null && c.channel.type === ChannelType.GuildVoice)?.channel);
 
         let mainChannel = channels.find(c => c.role === null)?.channel;
