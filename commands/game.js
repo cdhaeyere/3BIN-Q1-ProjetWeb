@@ -28,12 +28,21 @@ module.exports = {
         try {
             ({ players, channels, thiefRoles } = await init(interaction));
         } catch (e) {
-            const errorEmbed = new EmbedBuilder()
-                .setTitle('Erreur')
-                .setColor(Colors.Red)
-                .setDescription('Vous n\'avez pas répondu a temps');
+            if (e === "time") {
+                const errorEmbed = new EmbedBuilder()
+                    .setTitle('Erreur')
+                    .setColor(Colors.Red)
+                    .setDescription('Vous n\'avez pas répondu a temps');
 
-            await interaction.channel.send({ embeds: [errorEmbed], ephemeral: true });
+                await interaction.channel.send({ embeds: [errorEmbed], ephemeral: true });
+            } else if (e === "master_left") {
+                const gamemasterLeftEmbed = new EmbedBuilder()
+                    .setTitle("Annulé")
+                    .setColor(Colors.Red)
+                    .setDescription("Le game master a quitté la game, le jeu est annulé");
+
+                await interaction.channel.send({ embeds: [gamemasterLeftEmbed] });
+            }
 
             inGame = false;
 
